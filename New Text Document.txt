@@ -5,14 +5,10 @@ const int GREENPIN = 5;
 const int DIRECTION_CHANGE_PIN = 12;
 
 int direction = 0;  // 0 = right, 1 = left
-
-// Sequence state
 int stepIndex = 0;
 unsigned long lastStepTime = 0;
 
-// Durations (ms)
-const unsigned long rightDurations[] = {2000, 1000, 500, 500};
-const unsigned long leftDurations[]  = {500, 1000, 2000, 500};
+const unsigned long stepDurations[] = {2000, 1000, 500, 500};
 
 void setup() {
   pinMode(REDPIN, OUTPUT);
@@ -21,30 +17,27 @@ void setup() {
   pinMode(DIRECTION_CHANGE_PIN, INPUT_PULLUP);
 }
 
-void allOff() {
-  digitalWrite(REDPIN, LOW);
-  digitalWrite(YELOWPIN, LOW);
-  digitalWrite(GREENPIN, LOW);
+void setLights(int r, int y, int g) {
+  digitalWrite(REDPIN, r);
+  digitalWrite(YELOWPIN, y);
+  digitalWrite(GREENPIN, g);
 }
 
-void updateLightsRight(int step) {
-  allOff();
-  if (step == 0) digitalWrite(REDPIN, HIGH);
-  if (step == 1) digitalWrite(YELOWPIN, HIGH);
-  if (step == 2) digitalWrite(GREENPIN, HIGH);
-  // step 3 = all off pause
+void showRightStep(int s) {
+  if (s == 0) setLights(1,0,0);   // Red
+  if (s == 1) setLights(0,1,0);   // Yellow
+  if (s == 2) setLights(0,0,1);   // Green
+  if (s == 3) setLights(0,0,0);   // Off pause
 }
 
-void updateLightsLeft(int step) {
-  allOff();
-  if (step == 0) digitalWrite(GREENPIN, HIGH);
-  if (step == 1) digitalWrite(YELOWPIN, HIGH);
-  if (step == 2) digitalWrite(REDPIN, HIGH);
-  // step 3 = all off pause
+void showLeftStep(int s) {
+  if (s == 0) setLights(0,0,1);   // Green
+  if (s == 1) setLights(0,1,0);   // Yellow
+  if (s == 2) setLights(1,0,0);   // Red
+  if (s == 3) setLights(0,0,0);   // Off pause
 }
 
 void loop() {
-  // Detect button press to toggle direction
   if (digitalRead(DIRECTION_CHANGE_PIN) == LOW) {
     direction = !direction;
     stepIndex = 0;
@@ -53,18 +46,11 @@ void loop() {
   }
 
   unsigned long now = millis();
-
-  if (direction == 0) { // right
-    if (now - lastStepTime >= rightDurations[stepIndex]) {
-      stepIndex = (stepIndex + 1) % 4;
-      lastStepTime = now;
-    }
-    updateLightsRight(stepIndex);
-  } else { // left
-    if (now - lastStepTime >= leftDurations[stepIndex]) {
-      stepIndex = (stepIndex + 1) % 4;
-      lastStepTime = now;
-    }
-    updateLightsLeft(stepIndex);
+  if (now - lastStepTime >= stepDurations[stepIndex]) {
+    stepIndex = (stepIndex + 1) % 4;
+    lastStepTime = now;
   }
+
+  if (direction == 0) showRightStep(stepIndex);
+  else showLeftStep(stepIndex);
 }
