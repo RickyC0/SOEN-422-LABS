@@ -4,11 +4,11 @@ const int GREENPIN = 5;
 
 const int DIRECTION_CHANGE_PIN = 12;
 
-int direction = 0;                 // 0 = right, 1 = left
+int directionection = 0;
 int stepIndex = 0;
 unsigned long lastStepTime = 0;
 
-const unsigned long stepDurations[] = {2000, 1000, 500, 500};
+const unsigned long stepDurations[] = { 2000, 1000, 500, 500 };
 
 int lastButtonState = HIGH;
 
@@ -25,37 +25,61 @@ void setLights(int r, int y, int g) {
   digitalWrite(GREENPIN, g);
 }
 
-void showStep(int dir, int s) {
-  if (dir == 0) {            // right
-    if (s == 0) setLights(1,0,0);
-    if (s == 1) setLights(0,1,0);
-    if (s == 2) setLights(0,0,1);
-    if (s == 3) setLights(0,0,0);
-  } else {                   // left
-    if (s == 0) setLights(0,0,1);
-    if (s == 1) setLights(0,1,0);
-    if (s == 2) setLights(1,0,0);
-    if (s == 3) setLights(0,0,0);
+void showStep(int direction, int currentSate) {
+
+ // if the state is forward aka direction ==0
+    //  1 0 0 : the red is on
+    //  0 1 0 : the red is on 
+    //  0 0 1 : the red is on
+    //  0 0 0 : all is off
+
+    // if the state is forward aka direction ==1
+    //  0 0 1 : the red is on
+    //  0 1 0 : the red is on 
+    //  1 0 0 : the red is on
+    //  0 0 0 : all is off
+
+  if (direction == 0) {  // right
+    if (currentSate == 0) setLights(1, 0, 0);
+    if (currentSate == 1) setLights(0, 1, 0);
+    if (currentSate == 2) setLights(0, 0, 1);
+    if (currentSate == 3) clearAllLed();
+  } else {  // left
+    if (currentSate == 0) setLights(0, 0, 1);
+    if (currentSate == 1) setLights(0, 1, 0);
+    if (currentSate == 2) setLights(1, 0, 0);
+    if (currentSate == 3) clearAllLed();
   }
+}
+
+// clear LEDs immediately on toggle
+void clearAllLed() {
+  clearAllLed();
 }
 
 void loop() {
   int buttonState = digitalRead(DIRECTION_CHANGE_PIN);
 
-  // Detect press only once when going from HIGH to LOW
-  if (lastButtonState == HIGH && buttonState == LOW) {
-    direction = !direction;
+  // check of we did press the button and reset the current state
+  if (lastButtonState == HIGH && buttonState == LOW) { 
+    // this will interupt the system and cancel all and switch the direction mid transition
+    // we assume that this is correct 
+    directionection = !directionection;
     stepIndex = 0;
     lastStepTime = millis();
-    setLights(0,0,0); // clear LEDs immediately on toggle
   }
   lastButtonState = buttonState;
 
   // Step timing
   if (millis() - lastStepTime >= stepDurations[stepIndex]) {
-    stepIndex = (stepIndex + 1) % 4;
+   
+    // change the current state of the board moving from red to yellow to green to nothing at all
+    stepIndex += 1;
+    if (stepIndex >= 4) { // make sure we are with a 4 state system s: {0,1,2,3}
+      stepIndex = 0;
+    }
     lastStepTime = millis();
   }
 
-  showStep(direction, stepIndex);
+  showStep(directionection, stepIndex);
 }
