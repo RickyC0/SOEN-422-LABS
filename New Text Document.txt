@@ -4,11 +4,13 @@ const int GREENPIN = 5;
 
 const int DIRECTION_CHANGE_PIN = 12;
 
-int direction = 0;  // 0 = right, 1 = left
+int direction = 0;                 // 0 = right, 1 = left
 int stepIndex = 0;
 unsigned long lastStepTime = 0;
 
 const unsigned long stepDurations[] = {2000, 1000, 500, 500};
+
+int lastButtonState = HIGH;
 
 void setup() {
   pinMode(REDPIN, OUTPUT);
@@ -23,34 +25,37 @@ void setLights(int r, int y, int g) {
   digitalWrite(GREENPIN, g);
 }
 
-void showRightStep(int s) {
-  if (s == 0) setLights(1,0,0);   // Red
-  if (s == 1) setLights(0,1,0);   // Yellow
-  if (s == 2) setLights(0,0,1);   // Green
-  if (s == 3) setLights(0,0,0);   // Off pause
-}
-
-void showLeftStep(int s) {
-  if (s == 0) setLights(0,0,1);   // Green
-  if (s == 1) setLights(0,1,0);   // Yellow
-  if (s == 2) setLights(1,0,0);   // Red
-  if (s == 3) setLights(0,0,0);   // Off pause
+void showStep(int dir, int s) {
+  if (dir == 0) {            // right
+    if (s == 0) setLights(1,0,0);
+    if (s == 1) setLights(0,1,0);
+    if (s == 2) setLights(0,0,1);
+    if (s == 3) setLights(0,0,0);
+  } else {                   // left
+    if (s == 0) setLights(0,0,1);
+    if (s == 1) setLights(0,1,0);
+    if (s == 2) setLights(1,0,0);
+    if (s == 3) setLights(0,0,0);
+  }
 }
 
 void loop() {
-  if (digitalRead(DIRECTION_CHANGE_PIN) == LOW) {
+  int buttonState = digitalRead(DIRECTION_CHANGE_PIN);
+
+  // Detect press only once when going from HIGH to LOW
+  if (lastButtonState == HIGH && buttonState == LOW) {
     direction = !direction;
     stepIndex = 0;
     lastStepTime = millis();
-    delay(200); // debounce
+    setLights(0,0,0); // clear LEDs immediately on toggle
   }
+  lastButtonState = buttonState;
 
-  unsigned long now = millis();
-  if (now - lastStepTime >= stepDurations[stepIndex]) {
+  // Step timing
+  if (millis() - lastStepTime >= stepDurations[stepIndex]) {
     stepIndex = (stepIndex + 1) % 4;
-    lastStepTime = now;
+    lastStepTime = millis();
   }
 
-  if (direction == 0) showRightStep(stepIndex);
-  else showLeftStep(stepIndex);
+  showStep(direction, stepIndex);
 }
