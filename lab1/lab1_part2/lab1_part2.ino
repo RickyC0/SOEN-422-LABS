@@ -26,7 +26,8 @@ LightSet Set1;
 
 LightSet Set2;
 
-void setLights(int red_pin, int yellow_pin, int green_pin, int r_value, int y_value, int g_value) {
+//Turns on the appropriate light from the given pins
+void toggleLights(int red_pin, int yellow_pin, int green_pin, int r_value, int y_value, int g_value) {
 
   digitalWrite(red_pin, r_value ? HIGH : LOW);
   digitalWrite(yellow_pin, y_value ? HIGH : LOW);
@@ -34,33 +35,33 @@ void setLights(int red_pin, int yellow_pin, int green_pin, int r_value, int y_va
 }
 
 // Change the current light that is to be displayed in each light set
-void applyStep(LightSet &S, int step, bool isSet1) {
+void updateStep(LightSet &S, int step, bool isSet1) {
   if (isSet1) {
     // Set 1: RED -> GREEN -> YELLOW
     if (step == 0) {
-      setLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
+      toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
     }  
     else if (step == 1) {
-      setLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 0, 1); // GREEN
+      toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 0, 1); // GREEN
     }  
     else{
-      setLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); } // YELLOW
+      toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); } // YELLOW
 
   } else {
     //NB: THE ORDER OF LIGHTS IN THIS SET IS DIFFERENT FROM SET1 BUT WITH THE SAME TIMES FOR EACH LIGHT
     // Set 2: GREEN -> YELLOW -> RED
     if (step == 0) {
-      setLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 0, 1); // GREEN
+      toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 0, 1); // GREEN
     }
     else if (step == 1) {
-      setLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); // YELLOW
+      toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); // YELLOW
     }
-    else setLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
+    else toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
   }
 }
 
 // Advance one light set independently (without using delay() to not stall the entire board)
-void updateSet(LightSet &S, const unsigned long durations[], bool isSet1) {
+void checkNextLight(LightSet &S, const unsigned long durations[], bool isSet1) {
   int now = millis();
 
   if (now - S.stepStart >= durations[S.step]) {
@@ -69,14 +70,14 @@ void updateSet(LightSet &S, const unsigned long durations[], bool isSet1) {
     S.stepStart = now;
 
     //update the step in the set i.e. next light in the set
-    applyStep(S, S.step, isSet1);
+    updateStep(S, S.step, isSet1);
   }
 }
 
 //turn off all leds
 void clearAllLed() {
-  setLights(Set1.red_pin, Set1.yellow_pin, Set1.green_pin, 0, 0, 0);
-  setLights(Set2.red_pin, Set2.yellow_pin, Set2.green_pin, 0, 0, 0);
+  toggleLights(Set1.red_pin, Set1.yellow_pin, Set1.green_pin, 0, 0, 0);
+  toggleLights(Set2.red_pin, Set2.yellow_pin, Set2.green_pin, 0, 0, 0);
 }
 
 void setup() {
@@ -101,15 +102,15 @@ void setup() {
 
   Set1.step = 0;
   Set1.stepStart = millis();
-  applyStep(Set1, Set1.step, true);
+  updateStep(Set1, Set1.step, true);
 
   Set2.step = 0;
   Set2.stepStart = millis();
-  applyStep(Set2, Set2.step, false);
+  updateStep(Set2, Set2.step, false);
 }
 
 void loop() {
   // Each set advances on its own schedule, independently
-  updateSet(Set1, durations1, true); //Set 1
-  updateSet(Set2, durations2, false); //Set 2
+  checkNextLight(Set1, durations1, true); //Set 1
+  checkNextLight(Set2, durations2, false); //Set 2
 }
