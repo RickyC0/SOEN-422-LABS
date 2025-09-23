@@ -7,9 +7,6 @@ const int REDPIN_2 = 8;
 const int YELLOWPIN_2 = 9;
 const int GREENPIN_2 = 10;
 
-const int BUTTON_PIN = 12;
-int buttonState = LOW;
-
 // ---------- Duration for each light in each set (ms) ----------
 // Set order 1: RED (5s) -> GREEN (4s) -> YELLOW (1s)
 const unsigned long durations1[] = { 5000, 4000, 1000 };
@@ -29,6 +26,7 @@ LightSet Set1;
 
 LightSet Set2;
 
+//Turns on the appropriate light from the given pins
 void toggleLights(int red_pin, int yellow_pin, int green_pin, int r_value, int y_value, int g_value) {
 
   digitalWrite(red_pin, r_value ? HIGH : LOW);
@@ -46,7 +44,7 @@ void updateStep(LightSet &S, int step, bool isSet1) {
     else if (step == 1) {
       toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 0, 1); // GREEN
     }  
-    else if (step ==2){
+    else{
       toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); } // YELLOW
 
   } else {
@@ -58,7 +56,7 @@ void updateStep(LightSet &S, int step, bool isSet1) {
     else if (step == 1) {
       toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 0, 1, 0); // YELLOW
     }
-    else if(step ==2) toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
+    else toggleLights(S.red_pin, S.yellow_pin, S.green_pin, 1, 0, 0); // RED
   }
 }
 
@@ -80,41 +78,6 @@ void checkNextLight(LightSet &S, const unsigned long durations[], bool isSet1) {
 void clearAllLed() {
   toggleLights(Set1.red_pin, Set1.yellow_pin, Set1.green_pin, 0, 0, 0);
   toggleLights(Set2.red_pin, Set2.yellow_pin, Set2.green_pin, 0, 0, 0);
-}
-
-//HELPER FUNCTION
-int getStep1(int r, int y, int g) {
-    if (r) return 0; // Red
-    if (y) return 1; // Yellow
-    if (g) return 2; // Green
-    return -1; // none active
-}
-
-int getStep2(int g, int y, int r) {
-    if (g) return 0; // Green
-    if (y) return 1; // Yellow
-    if (r) return 2; // Red
-    return -1; // none active
-}
-
-// it resets all the light to a default value which set1 : red and set 2: green
-void pedestrian_crossing(int r1 = 1, int y1 = 0, int g1 = 0,
-                         int g2 = 1, int y2 = 0, int r2 = 0) 
-{
-    //Getting the appropriate step of which light we want to turn on in each Set
-    int step_1 = getStep1(r1, y1, g1);
-    int step_2 = getStep2(g2, y2, r2);
-
-    if (step_1 != -1) {
-      updateStep(Set1, step_1, true);
-      Set1.step = step_1; //reset step to the passed step
-      Set1.stepStart = millis(); // rester time when light got activated
-    }
-    if (step_2 != -1) {
-      updateStep(Set2, step_2, false);
-      Set2.step = step_2; //reset step to the passed step
-      Set2.stepStart = millis(); // rester time when light got activated
-    }
 }
 
 void setup() {
@@ -144,29 +107,9 @@ void setup() {
   Set2.step = 0;
   Set2.stepStart = millis();
   updateStep(Set2, Set2.step, false);
-
-  //--------BUTTON-----------
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-
 }
 
 void loop() {
-  buttonState = digitalRead(BUTTON_PIN);
-
-  //semaphore to lock the direction switch button in case the user is holding the button
-  // to prevent issues from holding down the button
-  static bool button_lock =false;
-
-  // check of we did press the button and reset the current state
-  if (buttonState == HIGH && !button_lock) {
-    pedestrian_crossing();
-
-    button_lock = true;
-
-  }else if(buttonState == LOW){
-    button_lock = false;
-  }
-
   // Each set advances on its own schedule, independently
   checkNextLight(Set1, durations1, true); //Set 1
   checkNextLight(Set2, durations2, false); //Set 2
